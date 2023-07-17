@@ -265,7 +265,7 @@ BOOL Player::IsCollidedWithBorderLine()
 		printf("successedDrawing\n");
 		Points = tempPoints;
 		NowDrawing = false;
-		tempPoints.clear();
+		//tempPoints.clear();
 		return true;
 	}
 	return false;
