@@ -1,9 +1,9 @@
 ﻿// GalsPanicProj.cpp : 애플리케이션에 대한 진입점을 정의합니다.
 //
-
+#include "pch.h"
 #include "framework.h"
 #include "GalsPanicProj.h"
-#include "Player.h"
+#include "CCore.h"
 
 #ifdef UNICODE
 #pragma comment(linker, "/entry:wWinMainCRTStartup /subsystem:console")
@@ -18,14 +18,14 @@
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
 WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
+HWND g_hWnd;
 
 //게임 전역 변수
 enum Move
 {
     UP,DOWN,LEFT,RIGHT,STOP
 };
-RECT clientRect;
-RECT rectView = { 100,100,500,800 };
+RECT rectView = { 50,50,700,900 };
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -54,6 +54,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return FALSE;
     }
 
+    if (FAILED(CCore::GetInst()->Init(g_hWnd, POINT{ 600,800 })))
+    {
+        MessageBox(nullptr, L"Core 객체 초기화 실패", L"ERROR", MB_OK);
+        return false;
+    }
+
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_GALSPANICPROJ));
 
     MSG msg;
@@ -74,6 +80,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         else
         {
             //기타 처리
+            CCore::GetInst()->Progress();
         }
     }
 
@@ -122,16 +129,16 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, 768, 1024, nullptr, nullptr, hInstance, nullptr);
+   g_hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
-   if (!hWnd)
+   if (!g_hWnd)
    {
       return FALSE;
    }
 
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
+   ShowWindow(g_hWnd, nCmdShow);
+   UpdateWindow(g_hWnd);
 
    return TRUE;
 }
@@ -148,42 +155,21 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    static Player player;
-    static Move move;
     switch (message)
     {
     case WM_CREATE:
         SetTimer(hWnd, timer_id, 10, NULL);
-        GetClientRect(hWnd, &clientRect);
-        rectView = { clientRect.left + 50,clientRect.top + 50, clientRect.right - 50, clientRect.bottom - 50 };
-        player.SetRectView(rectView);
+     
+        
         break;
     case WM_TIMER:
         
-        player.Update();
-        InvalidateRgn(hWnd, NULL, TRUE);
         break;
     case WM_KEYDOWN:
-        switch (wParam)
-        {
-        case VK_UP:
-            move = UP;
-            break;
-        case VK_DOWN:
-            move = DOWN;
-            break;
-        case VK_LEFT:
-            move = LEFT;
-            break;
-        case VK_RIGHT:
-            move = RIGHT;
-            break;
-        }
-        player.SetMovement(move);
+        
         break;
     case WM_KEYUP:
-        move = STOP;
-        player.SetMovement(move);
+       
         break;
     case WM_COMMAND:
         {
@@ -206,8 +192,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
-            player.Draw(hdc);
             EndPaint(hWnd, &ps);
         }
         break;
