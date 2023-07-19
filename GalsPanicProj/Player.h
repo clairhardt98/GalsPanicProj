@@ -33,6 +33,7 @@ public:
 	void SetMovement(int movement, float dt);
 	void CheckCanMove();
 	BOOL CheckLine(const POINT& p1, const POINT& p2);
+	void DrawPoints(HDC hdc);
 
 	void StartDrawing();
 	void EndDrawing();

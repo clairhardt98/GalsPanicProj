@@ -53,7 +53,7 @@ void Player::SetMovement(int m, float _dt)
 		{
 			movement.setX(0);
 			movement.setY(-1);
-			mov = UP;
+			mov = UP;				
 		}
 
 		break;
@@ -93,18 +93,12 @@ void Player::SetMovement(int m, float _dt)
 void Player::Draw(HDC hdc)
 {
 	Polygon(hdc, rectView, 4);
+	DrawPoints(hdc);
 	Ellipse(hdc, center.getX() - radius, center.getY() - radius,
 		center.getX() + radius, center.getY() + radius);
 
 	DrawLine(hdc);
-	if(Points.size()>1)
-	{
-		POINT* tempP = new POINT[Points.size()];
-		for (int i = 0; i < Points.size(); i++)
-			tempP[i] = Points[i];
-		Polygon(hdc, tempP, Points.size());
-		delete[] tempP;
-	}
+	
 
 }
 
@@ -115,6 +109,7 @@ void Player::Update()
 	if (CanMoveY)
 		center.setY(center.getY() + movement.getY() * Speed * dt);
 	CheckCanMove();
+	//printf("canMoveX, canMoveY : %d, %d\n", CanMoveX, CanMoveY);
 	if (IsCollidedWithDrawedLine())
 	{
 		printf("Collided\n");
@@ -132,7 +127,9 @@ void Player::CheckCanMove()
 {
 	if (IsDrawing)
 	{
+		//일단 다 움직일 수 있음
 		CanMoveX = CanMoveY = true;
+		//rectView의 바깥으로 움직이는 것은 안됨
 		if (center.getX() < rectView[0].x)
 			center.setX(rectView[0].x);
 		if (center.getY() > rectView[1].y)
@@ -144,7 +141,35 @@ void Player::CheckCanMove()
 	}
 	else
 	{
+		//rectView의 선 위에서 움직이기
 		CanMoveX = CanMoveY = false;
+
+		for (int i = 0; i < Points.size(); i++)
+		{
+			if (Points[i].y == Points[(i + 1) % Points.size()].y && center.getY() == Points[i].y)
+			{
+				LONG max = max(Points[i].x, Points[(i + 1) % Points.size()].x);
+				LONG min = min(Points[i].x, Points[(i + 1) % Points.size()].x);
+
+				if (center.getX() >= max)
+					center.setX(max);
+				if (center.getX() <= min)
+					center.setX(min);
+				CanMoveX = true;
+			}
+			if (Points[i].x == rectView[(i + 1) % 4].x && center.getX() == Points[i].x)
+			{
+				LONG max = max(Points[i].y, Points[(i + 1) % Points.size()].y);
+				LONG min = min(Points[i].y, Points[(i + 1) % Points.size()].y);
+
+				if (center.getY() >= max)
+					center.setY(max);
+				if (center.getY() <= min)
+					center.setY(min);
+				CanMoveY = true;
+			}
+		}
+
 		for (int i = 0; i < 4; i++)
 		{
 			if (rectView[i].y == rectView[(i + 1) % 4].y && center.getY() == rectView[i].y)
@@ -170,6 +195,12 @@ void Player::CheckCanMove()
 				CanMoveY = true;
 			}
 		}
+
+		//points 폴리곤 위에서 움직이기
+		
+		//CanMoveX = CanMoveY = false;
+		
+		
 	}
 }
 
@@ -178,6 +209,7 @@ void Player::StartDrawing()
 	if (!IsDrawing)
 	{
 		tempPoints.push_back({ (int)center.getX(),(int)center.getY() });
+		printf("Pushed %d, %d\n", (int)center.getX(), (int)center.getY());
 		printf("start Drawing\n");
 		IsDrawing = true;
 	}
@@ -190,6 +222,18 @@ void Player::Turn()
 		tempPoints.push_back({ (int)center.getX(),(int)center.getY() });
 		printf("Pushed %d, %d\n", (int)center.getX(), (int)center.getY());
 		NowDrawing = true;
+	}
+}
+
+void Player::DrawPoints(HDC hdc)
+{
+	if (Points.size() > 1)
+	{
+		POINT* tempP = new POINT[Points.size()];
+		for (int i = 0; i < Points.size(); i++)
+			tempP[i] = Points[i];
+		Polygon(hdc, tempP, Points.size());
+		delete[] tempP;
 	}
 }
 
@@ -251,12 +295,13 @@ BOOL Player::IsCollidedWithBorderLine()
 		if (rectView[i].y == rectView[(i + 1) % 4].y && (int)center.getY() == rectView[i].y)
 		{
 			tempPoints.push_back({(int)center.getX(), (int)center.getY()});
-			//printf("borderline\n");
+			printf("Pushed %d, %d\n", (int)center.getX(), (int)center.getY());
 			SuccessedDrawing = true;
 		}
 		if (rectView[i].x == rectView[(i + 1) % 4].x && (int)center.getX() == rectView[i].x)
 		{
 			tempPoints.push_back({ (int)center.getX(), (int)center.getY() });
+			printf("Pushed %d, %d\n", (int)center.getX(), (int)center.getY());
 			SuccessedDrawing = true;
 		}
 	}
@@ -264,8 +309,10 @@ BOOL Player::IsCollidedWithBorderLine()
 	{
 		printf("successedDrawing\n");
 		Points = tempPoints;
+		printf("Points : \n");
+		for (auto e : Points)
+			printf("\t (%d, %d)\n", e.x, e.y);
 		NowDrawing = false;
-		//tempPoints.clear();
 		return true;
 	}
 	return false;
@@ -283,10 +330,9 @@ void Player::EndDrawing()
 		if(!SuccessedDrawing)
 		{
 			center = Vector2D(tempPoints[0].x, tempPoints[0].y);
-			tempPoints.clear();
-			printf("tempPoints Cleared\n");
-
 		}
+		tempPoints.clear();
+		printf("tempPoints Cleared\n");
 		IsDrawing = false;
 		NowDrawing = false;
 		SuccessedDrawing = false;
