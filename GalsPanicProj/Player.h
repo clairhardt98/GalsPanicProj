@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 class Player
 {
 private:
@@ -8,8 +9,7 @@ private:
 	LONG radius;
 	Vector2D movement;
 
-	POINT rectView[4];
-	BOOL Line[4];
+	POINT borderLine[4];
 	std::vector<POINT> tempPoints;
 	std::vector<POINT> Points;
 
