@@ -9,9 +9,17 @@ private:
 	LONG radius;
 	Vector2D movement;
 
-	POINT borderLine[4];
+	//그릴 때 사용하는 임시 벡터
 	std::vector<POINT> tempPoints;
+	//로직 수행 벡터
 	std::vector<POINT> Points;
+	//그릴 때만 사용하는 POINT 배열
+	POINT* PointsArr;
+	//현재 어느 선분 위에 있는지에 대한 정보
+	std::pair<int, int> CurLine;
+	//라인 캐스팅
+	POINT CastedLinePoint;
+	const LONG LineLength = 1000;
 
 	BOOL IsDrawing;
 	BOOL CanMoveX;
@@ -32,8 +40,8 @@ public:
 	const Vector2D& GetMovement() { return movement; }
 	void SetMovement(int movement, float dt);
 	void CheckCanMove();
-	BOOL CheckLine(const POINT& p1, const POINT& p2);
 	void DrawPoints(HDC hdc);
+	int CastLine();
 
 	void StartDrawing();
 	void EndDrawing();
@@ -50,4 +58,6 @@ public:
 	//이미 존재하는 폴리곤에 부딪혔을 때
 	BOOL IsCollidedWithMyPolygon();
 
+public:
+	int GetArea(const std::vector<POINT>& _polygon);
 };

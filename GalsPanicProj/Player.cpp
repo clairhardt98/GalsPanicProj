@@ -18,19 +18,28 @@ Player::Player()
 	//<<이동 상태 및 이동 속도
 	mov = STOP;
 	dt = 0;
+	
 }
 
 void Player::SetRect(const RECT& rv)
 {
 	//<<기본 외곽 사각형 정의
-	borderLine[0] = { rv.left + 50, rv.top + 100 };
-	borderLine[1] = { rv.left + 50,rv.bottom - 50 };
-	borderLine[2] = { rv.right - 50,rv.bottom - 50 };
-	borderLine[3] = { rv.right - 50, rv.top + 100 };
+	
+	Points.push_back({ rv.left + 50, rv.top + 100 });
+	Points.push_back({ rv.left + 50,rv.bottom - 50 });
+	Points.push_back({ rv.right - 50,rv.bottom - 50 });
+	Points.push_back({ rv.right - 50, rv.top + 100 });
 	//>>
 	
 	//기본 위치 초기화
-	center = Vector2D(borderLine[0].x, borderLine[0].y);
+	center = Vector2D(Points[0].x, Points[0].y);
+	PointsArr = new POINT[Points.size()];
+	for (int i = 0; i < Points.size(); i++)
+	{
+		PointsArr[i] = Points[i];
+	}
+	CurLine = { 3,0 };
+	CastedLinePoint = {(LONG)center.getX(), (LONG)center.getY()};
 }
 
 void Player::SetMovement(int m, float _dt)
@@ -90,13 +99,13 @@ void Player::SetMovement(int m, float _dt)
 
 void Player::Draw(HDC hdc)
 {
-	//테두리 사각형
-	Polygon(hdc, borderLine, 4);
+	
 	DrawPoints(hdc);
+	
+	//printf("Cur Line : %d, %d\n", CurLine.first, CurLine.second);
+	DrawLine(hdc);
 	Ellipse(hdc, center.getX() - radius, center.getY() - radius,
 		center.getX() + radius, center.getY() + radius);
-
-	DrawLine(hdc);
 }
 
 void Player::Update()
@@ -106,7 +115,8 @@ void Player::Update()
 	if (CanMoveY)
 		center.setY(center.getY() + movement.getY() * Speed * dt);
 	CheckCanMove();
-	printf("canMoveX, canMoveY : %d, %d\n", CanMoveX, CanMoveY);
+	
+	//printf("canMoveX, canMoveY : %d, %d\n", CanMoveX, CanMoveY);
 	if (IsCollidedWithDrawedLine())
 	{
 		printf("Collided\n");
@@ -123,92 +133,48 @@ void Player::CheckCanMove()
 {
 	if (IsDrawing)
 	{
-		//일단 다 움직일 수 있음
-		CanMoveX = CanMoveY = true;
-		//borderLine의 바깥으로 움직이는 것은 안됨
-		if (center.getX() < borderLine[0].x)
-			center.setX(borderLine[0].x);
-		if (center.getY() > borderLine[1].y)
-			center.setY(borderLine[1].y);
-		if (center.getX() > borderLine[2].x)
-			center.setX(borderLine[2].x);
-		if (center.getY() < borderLine[0].y)
-			center.setY(borderLine[0].y);
+		if(CastLine()%2 == 1)
+			CanMoveX = CanMoveY = true;
+		else
+			CanMoveX = CanMoveY = false;
 	}
 	else
 	{
 		CanMoveX = CanMoveY = false;
 
 		//points 폴리곤 위에서 움직이기
-		if(Points.size()>1)
-		{
-			for (int i = 0; i < Points.size() - 1; i++)
-			{
-				if (Points[i].y == Points[i + 1].y && (int)center.getY() == Points[i].y)
-				{
-					LONG max = max(Points[i].x, Points[i + 1].x);
-					LONG min = min(Points[i].x, Points[i + 1].x);
-
-					
-					if (center.getX() >= max)
-						center.setX(max);
-					if (center.getX() <= min)
-						center.setX(min);
-					
-					CanMoveX = true;
-					//return;
-				}
-				if (Points[i].x == Points[i + 1].x && (int)center.getX() == Points[i].x)
-				{
-					LONG max = max(Points[i].y, Points[i + 1].y);
-					LONG min = min(Points[i].y, Points[i + 1].y);
-
-					
-					if (center.getY() >= max)
-						center.setY(max);
-					if (center.getY() <= min)
-						center.setY(min);
-					
-					CanMoveY = true;
-					//return;
-				}
-			}
-		}
 		
-		//borderLine의 선 위에서 움직이기
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < Points.size(); i++)
 		{
-			if (borderLine[i].y == borderLine[(i + 1) % 4].y && (int)center.getY() == borderLine[i].y)
+			if (Points[i].y == Points[(i + 1)%Points.size()].y && (int)center.getY() == Points[i].y)
 			{
-				LONG max = max(borderLine[i].x, borderLine[(i + 1) % 4].x);
-				LONG min = min(borderLine[i].x, borderLine[(i + 1) % 4].x);
+				LONG max = max(Points[i].x, Points[(i + 1) % Points.size()].x);
+				LONG min = min(Points[i].x, Points[(i + 1) % Points.size()].x);
 
-				
 				if (center.getX() >= max)
 					center.setX(max);
 				if (center.getX() <= min)
 					center.setX(min);
 				
+				CurLine = { i,(i + 1) % Points.size() };
 				CanMoveX = true;
+				//return;
 			}
-			if (borderLine[i].x == borderLine[(i + 1) % 4].x && (int)center.getX() == borderLine[i].x)
+			if (Points[i].x == Points[(i + 1) % Points.size()].x && (int)center.getX() == Points[i].x)
 			{
-				LONG max = max(borderLine[i].y, borderLine[(i + 1) % 4].y);
-				LONG min = min(borderLine[i].y, borderLine[(i + 1) % 4].y);
+				LONG max = max(Points[i].y, Points[(i + 1) % Points.size()].y);
+				LONG min = min(Points[i].y, Points[(i + 1) % Points.size()].y);
 
 				
 				if (center.getY() >= max)
 					center.setY(max);
 				if (center.getY() <= min)
 					center.setY(min);
-				
+				CurLine = { i,(i + 1) % Points.size() };
 				CanMoveY = true;
+				//return;
 			}
 		}
-
-		
-
-		
 	}
 }
 
@@ -236,14 +202,61 @@ void Player::Turn()
 
 void Player::DrawPoints(HDC hdc)
 {
-	if (Points.size() > 1)
+	Polygon(hdc, PointsArr, Points.size());
+}
+
+int Player::CastLine()
+{
+	int x, y;
+	int cnt = 0;
+	//이동방향에 대한 선분 정의
+	switch (mov)
 	{
-		POINT* tempP = new POINT[Points.size()];
-		for (int i = 0; i < Points.size(); i++)
-			tempP[i] = Points[i];
-		Polygon(hdc, tempP, Points.size());
-		delete[] tempP;
+	case UP:
+		x = (int)center.getX();
+		y = (int)center.getY() - LineLength;
+		break;
+	case DOWN:
+		x = (int)center.getX();
+		y = (int)center.getY() + LineLength;
+		break;
+	case LEFT:
+		x = (int)center.getX() - LineLength;
+		y = (int)center.getY();
+		break;
+	case RIGHT:
+		x = (int)center.getX() + LineLength;
+		y = (int)center.getY();
+		break;
+	default :
+		x = (int)center.getX();
+		y = (int)center.getY();
+		break;
 	}
+	CastedLinePoint = { x,y };
+	
+	for (int i = 0; i < Points.size(); i++)
+	{
+		//Points의 x선분
+		if (Points[i].y == Points[(i + 1) % Points.size()].y)
+		{
+			int min = min((int)center.getY(), CastedLinePoint.y);
+			int max = max((int)center.getY(), CastedLinePoint.y);
+			if (Points[i].y < max && Points[i].y>min)
+				cnt++;
+			//return;
+		}
+		if (Points[i].x == Points[(i + 1) % Points.size()].x)
+		{
+			int min = min((int)center.getX(), CastedLinePoint.x);
+			int max = max((int)center.getX(), CastedLinePoint.x);
+			if (Points[i].x < max && Points[i].x>min)
+				cnt++;
+			//return;
+		}
+	}
+
+	return cnt;
 }
 
 void Player::DrawLine(HDC hdc)
@@ -298,20 +311,21 @@ BOOL Player::IsCollidedWithDrawedLine()
 
 BOOL Player::IsCollidedWithBorderLine()
 {
-	//<<보더라인에 닿으면
+	
 	if (!NowDrawing)
 		return false;
-	for (int i = 0; i < 4; i++)
+	//<<Points에 닿으면
+	for (int i = 0; i < Points.size(); i++)
 	{
 		//x선분에 겹침
-		if (borderLine[i].y == borderLine[(i + 1) % 4].y && (int)center.getY() == borderLine[i].y)
+		if (Points[i].y == Points[(i + 1) % 4].y && (int)center.getY() == Points[i].y)
 		{
 			tempPoints.push_back({(int)center.getX(), (int)center.getY()});
 			printf("Pushed %d, %d\n", (int)center.getX(), (int)center.getY());
 			SuccessedDrawing = true;
 			break;
 		}
-		if (borderLine[i].x == borderLine[(i + 1) % 4].x && (int)center.getX() == borderLine[i].x)
+		if (Points[i].x == Points[(i + 1) % 4].x && (int)center.getX() == Points[i].x)
 		{
 			tempPoints.push_back({ (int)center.getX(), (int)center.getY() });
 			printf("Pushed %d, %d\n", (int)center.getX(), (int)center.getY());
@@ -325,9 +339,9 @@ BOOL Player::IsCollidedWithBorderLine()
 	{
 		//임시 배열 벡터를 points에 옮김
 		printf("successedDrawing\n");
-		Points = tempPoints;
-		printf("Points : \n");
-		for (auto e : Points)
+		//Points = tempPoints;
+		printf("TempPoints : \n");
+		for (auto e : tempPoints)
 			printf("\t (%d, %d)\n", e.x, e.y);
 		NowDrawing = false;
 		return true;
@@ -338,6 +352,21 @@ BOOL Player::IsCollidedWithBorderLine()
 BOOL Player::IsCollidedWithMyPolygon()
 {
 	return 0;
+}
+
+int Player::GetArea(const std::vector<POINT>& _polygon)
+{
+	//매듭법을 사용해서 넓이 구하기
+	int temp1, temp2, sum;
+	sum = temp1 = temp2 = 0;
+
+	for (int i = 0; i < _polygon.size() - 1; i++)
+		temp1 += _polygon[i].x * _polygon[i + 1].y;
+	for (int i = 1; i < _polygon.size();i++)
+		temp2+= _polygon[i].x * _polygon[i - 1].y;
+
+	sum = abs(temp1 - temp2) / 2;
+	return sum;
 }
 
 void Player::EndDrawing()
