@@ -41,6 +41,7 @@ public:
 	void SetMovement(int movement, float dt);
 	void CheckCanMove();
 	void DrawPoints(HDC hdc);
+	
 	int CastLine();
 
 	void StartDrawing();
@@ -60,4 +61,5 @@ public:
 
 public:
 	int GetArea(const std::vector<POINT>& _polygon);
+	void UpdatePoints();
 };
