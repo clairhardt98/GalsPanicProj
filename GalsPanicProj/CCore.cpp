@@ -54,6 +54,7 @@ void CCore::Progress()
 
 void CCore::Update()
 {
+	static bool spacePressed = false;
 	if (GetAsyncKeyState(VK_UP) & 0x8000)
 	{
 		player.SetMovement(0,fDT);
@@ -70,17 +71,19 @@ void CCore::Update()
 	{
 		player.SetMovement(3, fDT);
 	}
-	else if (GetAsyncKeyState(VK_SPACE) & 0x8000)
+	else if ((GetAsyncKeyState(VK_SPACE) & 0x8000))
 	{
 		player.StartDrawing();
+		spacePressed = true;
 	}
 	else if (GetAsyncKeyState(VK_SPACE) & 0x0000)
 	{
 		player.EndDrawing();
+		spacePressed = false;
 	}
 	else
 	{
-		 player.SetMovement(4, fDT);
+		player.SetMovement(4, fDT);
 		player.EndDrawing();
 	}
 	

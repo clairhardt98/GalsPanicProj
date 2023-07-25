@@ -58,8 +58,12 @@ public:
 	BOOL IsCollidedWithBorderLine();
 	//이미 존재하는 폴리곤에 부딪혔을 때
 	BOOL IsCollidedWithMyPolygon();
+	//두 선분이 교차하는지 확인
+	/*int CCW(POINT p1, POINT p2, POINT p3);
+	BOOL IsIntersect(POINT p1, POINT p2, POINT p3, POINT p4);*/
 
 public:
 	int GetArea(const std::vector<POINT>& _polygon);
 	void UpdatePoints();
+	void SetPoints(std::vector<POINT>& p1, std::vector<POINT>& p2);
 };

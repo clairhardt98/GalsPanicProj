@@ -120,6 +120,7 @@ void Player::Update()
 
 	//printf("now on line between %d, %d\n", CurLine.first, CurLine.second);
 	//printf("canMoveX, canMoveY : %d, %d\n", CanMoveX, CanMoveY);
+	//printf("IsDrawing : %d, NowDrawing : %d, SuccessedDrawing %d\n", IsDrawing, NowDrawing, SuccessedDrawing);
 	if (IsCollidedWithDrawedLine())
 	{
 		printf("Collided\n");
@@ -154,6 +155,7 @@ void Player::CheckCanMove()
 				LONG max = max(Points[i].x, Points[(i + 1) % Points.size()].x);
 				LONG min = min(Points[i].x, Points[(i + 1) % Points.size()].x);
 
+				//if (center.getX() < min || center.getX() > max)continue;
 				if (center.getX() >= max)
 					center.setX(max);
 				if (center.getX() <= min)
@@ -168,7 +170,7 @@ void Player::CheckCanMove()
 				LONG max = max(Points[i].y, Points[(i + 1) % Points.size()].y);
 				LONG min = min(Points[i].y, Points[(i + 1) % Points.size()].y);
 
-
+				//if (center.getY() < min || center.getY() > max)continue;
 				if (center.getY() >= max)
 					center.setY(max);
 				if (center.getY() <= min)
@@ -237,28 +239,33 @@ int Player::CastLine()
 		break;
 	}
 	CastedLinePoint = { x,y };
+	POINT tempCenter = { center.getX(), center.getY()};
 
 	for (int i = 0; i < Points.size(); i++)
 	{
 		//Points의 x선분
 		if (Points[i].y == Points[(i + 1) % Points.size()].y)
 		{
-			int min = min((int)center.getY(), CastedLinePoint.y);
-			int max = max((int)center.getY(), CastedLinePoint.y);
-			if (Points[i].y < max && Points[i].y>min)
+			int minX = min((int)Points[i].x, Points[(i + 1) % Points.size()].x);
+			int maxX = max((int)Points[i].x, Points[(i + 1) % Points.size()].x);
+			int minY = min((int)center.getY(), CastedLinePoint.y);
+			int maxY = max((int)center.getY(), CastedLinePoint.y);
+			if (Points[i].y < maxY && Points[i].y>minY && tempCenter.x>minX && tempCenter.x<maxX)
 				cnt++;
 			//return;
 		}
 		if (Points[i].x == Points[(i + 1) % Points.size()].x)
 		{
-			int min = min((int)center.getX(), CastedLinePoint.x);
-			int max = max((int)center.getX(), CastedLinePoint.x);
-			if (Points[i].x < max && Points[i].x>min)
+			int minX = min((int)center.getX(), CastedLinePoint.x);
+			int maxX = max((int)center.getX(), CastedLinePoint.x);
+			int minY = min((int)Points[i].y, Points[(i + 1) % Points.size()].y);
+			int maxY = max((int)Points[i].y, Points[(i + 1) % Points.size()].y);
+			if (Points[i].x < maxX && Points[i].x>minX && tempCenter.y > minY && tempCenter.y < maxY)
 				cnt++;
 			//return;
 		}
 	}
-
+	//printf("cnt : %d\n", cnt);
 	return cnt;
 }
 
@@ -321,26 +328,37 @@ BOOL Player::IsCollidedWithBorderLine()
 	for (int i = 0; i < Points.size(); i++)
 	{
 		//x선분에 겹침
-		if (Points[i].y == Points[(i + 1) % 4].y && (int)center.getY() == Points[i].y)
+		if (Points[i].y == Points[(i + 1) % Points.size()].y && (int)center.getY() == Points[i].y)
 		{
-			tempPoints.push_back({ (int)center.getX(), (int)center.getY() });
-			printf("Pushed %d, %d\n", (int)center.getX(), (int)center.getY());
-			SuccessedDrawing = true;
-			break;
+			LONG max = max(Points[i].x, Points[(i + 1) % Points.size()].x);
+			LONG min = min(Points[i].x, Points[(i + 1) % Points.size()].x);
+			if (center.getX() >= min && center.getX() <= max)
+			{
+				tempPoints.push_back({ (int)center.getX(), (int)center.getY() });
+				printf("Pushed %d, %d\n", (int)center.getX(), (int)center.getY());
+				SuccessedDrawing = true;
+				break;
+			}
 		}
-		if (Points[i].x == Points[(i + 1) % 4].x && (int)center.getX() == Points[i].x)
+		if (Points[i].x == Points[(i + 1) % Points.size()].x && (int)center.getX() == Points[i].x)
 		{
-			tempPoints.push_back({ (int)center.getX(), (int)center.getY() });
-			printf("Pushed %d, %d\n", (int)center.getX(), (int)center.getY());
-			SuccessedDrawing = true;
-			break;
+			LONG max = max(Points[i].y, Points[(i + 1) % Points.size()].y);
+			LONG min = min(Points[i].y, Points[(i + 1) % Points.size()].y);
+
+			if (center.getY() >= min && center.getY() <= max)
+			{
+				tempPoints.push_back({ (int)center.getX(), (int)center.getY() });
+				printf("Pushed %d, %d\n", (int)center.getX(), (int)center.getY());
+				SuccessedDrawing = true;
+				break;
+			}
 		}
 	}
 	//<<
 	//>>성공적으로 그리기를 마쳤다면
 	if (SuccessedDrawing)
 	{
-		
+
 		//printf("TempPoints : \n");
 		//for (auto e : tempPoints)
 		//	printf("\t (%d, %d)\n", e.x, e.y);
@@ -354,6 +372,27 @@ BOOL Player::IsCollidedWithMyPolygon()
 {
 	return 0;
 }
+
+//int Player::CCW(POINT p1, POINT p2, POINT p3)
+//{
+//	int s = p1.x * p2.y + p2.x * p3.y + p3.x * p1.y;
+//	s -= (p1.y * p2.x + p2.y * p3.x + p3.y * p1.x);
+//
+//	if (s > 0)return 1;
+//	if (s == 0)return 0;
+//	if (s < 0)return -1;
+//}
+//
+//BOOL Player::IsIntersect(POINT p1, POINT p2, POINT p3, POINT p4)
+//{
+//	int p1p2 = CCW(p1, p2, p3) * CCW(p1, p2, p4);
+//	int p3p4 = CCW(p3, p4, p1) * CCW(p3, p4, p2);
+//
+//	if (p1p2 == 0 && p3p4 == 0)
+//		return false;
+//
+//	return p1p2 <= 0 && p3p4 <= 0;
+//}
 
 int Player::GetArea(const std::vector<POINT>& _polygon)
 {
@@ -372,6 +411,7 @@ int Player::GetArea(const std::vector<POINT>& _polygon)
 
 void Player::UpdatePoints()
 {
+	if (tempPoints.size() < 3) return;
 	//CurLine을 기반으로 어떤 점을 기준으로 나눠야 할지 결정
 	std::pair<int, int> prevLine = CurLine;
 	std::pair<int, int> nextLine = CurLine;
@@ -381,67 +421,68 @@ void Player::UpdatePoints()
 
 	for (int i = 0; i < Points.size(); i++)
 	{
+		//Points의 두 점이 x축으로 평행 && 그 y값이 center의 y값과 같고, 
 		if (Points[i].y == Points[(i + 1) % Points.size()].y && (int)center.getY() == Points[i].y)
 		{
 			LONG max = max(Points[i].x, Points[(i + 1) % Points.size()].x);
 			LONG min = min(Points[i].x, Points[(i + 1) % Points.size()].x);
 
-			if (center.getX() >= max)
-				center.setX(max);
-			if (center.getX() <= min)
-				center.setX(min);
+			if(center.getX()<=max && center.getX()>=min)
+				nextLine = { i,(i + 1) % Points.size() };
 
-			nextLine = { i,(i + 1) % Points.size() };
-			
 		}
 		if (Points[i].x == Points[(i + 1) % Points.size()].x && (int)center.getX() == Points[i].x)
 		{
 			LONG max = max(Points[i].y, Points[(i + 1) % Points.size()].y);
 			LONG min = min(Points[i].y, Points[(i + 1) % Points.size()].y);
 
-
-			if (center.getY() >= max)
-				center.setY(max);
-			if (center.getY() <= min)
-				center.setY(min);
-			nextLine = { i,(i + 1) % Points.size() };
+			if (center.getY() <= max && center.getY() >= min)
+				nextLine = { i,(i + 1) % Points.size() };
 		}
-	}
-	//printf("prevLine : %d, %d , nextLine : %d, %d\n", prevLine.first, prevLine.second, nextLine.first, nextLine.second);
-
-	//tempPolygon 1 생성
-	int idx = prevLine.second;
-	while(1)
+	} 
+	printf("prevLine : %d, %d , nextLine : %d, %d\n", prevLine.first, prevLine.second, nextLine.first, nextLine.second);
+	if (prevLine == nextLine)
 	{
-		if (idx == CurLine.first)break;
-		tempPolygon1.push_back(Points[idx]);
-		idx = (idx + 1) % Points.size();
+		tempPolygon1 = tempPoints;
+		printf("tempPoly 1 : \n");
+		for (auto e : tempPolygon1)
+			printf("\t %d, %d\n", e.x, e.y);
+
+		Points.insert(Points.begin()+prevLine.first+1, tempPoints.begin(), tempPoints.end());
+		tempPolygon2 = Points;
+		printf("tempPoly 2 : \n");
+		for (auto e : tempPolygon2)
+			printf("\t %d, %d\n", e.x, e.y);
+		SetPoints(tempPolygon1, tempPolygon2);
+		return;
 	}
+	//tempPolygon 1 생성
+	for (int i = prevLine.second; i != (nextLine.first + 1) % Points.size(); i = (i + 1) % Points.size())
+	{
+		tempPolygon1.push_back(Points[i]);
+		printf("tempPoly1 : pushed %d\n", i);
+	}
+
 	for (auto it = tempPoints.rbegin(); it != tempPoints.rend(); it++)
 		tempPolygon1.push_back(*it);
-	
+
 	printf("tempPoly 1 : \n");
 	for (auto e : tempPolygon1)
 		printf("\t %d, %d\n", e.x, e.y);
-	//tempPolygon 2 생성
-	idx = CurLine.second;
-	while (1)
-	{
-		if (idx == prevLine.first)break;
-		tempPolygon2.push_back(Points[idx]);
-		idx = (idx + 1) % Points.size();
-	}
+
 	for (auto it = tempPoints.begin(); it != tempPoints.end(); it++)
 		tempPolygon2.push_back(*it);
 
-	printf("tempPoly 2 : \n");
+	for (int i = nextLine.second; i != (prevLine.first + 1) % Points.size(); i = (i + 1) % Points.size())
+	{
+		tempPolygon2.push_back(Points[i]);
+		printf("tempPoly2 : pushed %d\n", i);
+	}
 
+	printf("tempPoly 2 : \n");
 	for (auto e : tempPolygon2)
 		printf("\t %d, %d\n", e.x, e.y);
-	/*if (GetArea(tempPolygon1) >= GetArea(tempPolygon2))
-		Points = tempPolygon1;
-	else
-		Points = tempPolygon2;*/
+	SetPoints(tempPolygon1, tempPolygon2);
 }
 
 void Player::EndDrawing()
@@ -463,3 +504,18 @@ void Player::EndDrawing()
 	}
 }
 
+void Player::SetPoints(std::vector<POINT>& p1, std::vector<POINT>& p2)
+{
+	printf("Polygon1 area : %d, Polygon2 Area : %d\n ", (GetArea(p1)), (GetArea(p2)));
+	if (GetArea(p1) > GetArea(p2))
+		Points = p1;
+	else
+		Points = p2;
+
+	delete[] PointsArr;
+	PointsArr = new POINT[Points.size()];
+	for (int i = 0; i < Points.size(); i++)
+	{
+		PointsArr[i] = Points[i];
+	}
+}
