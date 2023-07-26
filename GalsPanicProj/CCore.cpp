@@ -1,9 +1,12 @@
 #include "pch.h"
 #include "CCore.h"
 #include "CTimeMgr.h"
+#include <PathCch.h>
 
 //objects
 Player player;
+HBITMAP hBitmap;
+BITMAP BitBack;
 CCore::CCore()
 	:hWnd(0)
 	, ptResolution{}
@@ -40,6 +43,12 @@ int CCore::Init(HWND hWnd, POINT res)
 	//Init Mgr
 	CTimeMgr::GetInst()->Init();
 
+	hBitmap = (HBITMAP)LoadImage(NULL, TEXT("수지.bmp"), 
+		IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+
+	if (hBitmap==NULL)
+		MessageBox(NULL, TEXT("이미지 로드 에러"), TEXT("에러"), MB_OK);
+	GetObject(hBitmap, sizeof(BITMAP), &BitBack);
 	//Init Player
 	player.SetRect(rt);
 	return S_OK;
@@ -93,6 +102,16 @@ void CCore::Update()
 void CCore::Render()
 {
 	Rectangle(memDC, -1, -1, ptResolution.x + 1, ptResolution.y + 1);
+	{
+		HDC hMemDC = CreateCompatibleDC(hdc);
+		HBITMAP hOldBitmap = (HBITMAP)SelectObject(hMemDC, hBitmap);
+		int bx = BitBack.bmWidth;
+		int by = BitBack.bmHeight;
+		BitBlt(memDC, 0, 0, bx, by, hMemDC, 0, 0, SRCCOPY);
+		SelectObject(hMemDC, hOldBitmap);
+		DeleteDC(hMemDC);
+	}
 	player.Draw(memDC);
 	BitBlt(hdc, 0, 0, ptResolution.x, ptResolution.y, memDC, 0, 0, SRCCOPY);
+	
 }

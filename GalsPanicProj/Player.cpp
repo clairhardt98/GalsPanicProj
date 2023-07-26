@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Player.h"
-
+#include <string>
 Player::Player()
 {
 	//<< 기본 수치
@@ -18,17 +18,23 @@ Player::Player()
 	//<<이동 상태 및 이동 속도
 	mov = STOP;
 	dt = 0;
-
+	OnLineCnt = 1;
 }
-
+Player::~Player()
+{
+	delete[] PointsArr;
+}
 void Player::SetRect(const RECT& rv)
 {
+	PercentageDisplayPos = { 10, 10 };
 	//<<기본 외곽 사각형 정의
 
 	Points.push_back({ rv.left + 50, rv.top + 100 });
 	Points.push_back({ rv.left + 50,rv.bottom - 50 });
 	Points.push_back({ rv.right - 50,rv.bottom - 50 });
 	Points.push_back({ rv.right - 50, rv.top + 100 });
+	for (int i = 0; i < Points.size(); i++)
+		ImageRect[i] = Points[i];
 	//>>
 
 	//기본 위치 초기화
@@ -40,6 +46,7 @@ void Player::SetRect(const RECT& rv)
 	}
 	CurLine = { 3,0 };
 	CastedLinePoint = { (LONG)center.getX(), (LONG)center.getY() };
+	PointSize = ImageSize = GetArea(Points);
 }
 
 void Player::SetMovement(int m, float _dt)
@@ -106,8 +113,9 @@ void Player::Draw(HDC hdc)
 	DrawLine(hdc);
 	Ellipse(hdc, center.getX() - radius, center.getY() - radius,
 		center.getX() + radius, center.getY() + radius);
-	for (int i = 0; i < tempPoints.size(); i++)
-		Ellipse(hdc, tempPoints[i].x - 5, tempPoints[i].y - 5, tempPoints[i].x + 5, tempPoints[i].y + 5);
+	/*for (int i = 0; i < tempPoints.size(); i++)
+		Ellipse(hdc, tempPoints[i].x - 5, tempPoints[i].y - 5, tempPoints[i].x + 5, tempPoints[i].y + 5);*/
+	DisplayPercentage(hdc);
 }
 
 void Player::Update()
@@ -121,6 +129,7 @@ void Player::Update()
 	//printf("now on line between %d, %d\n", CurLine.first, CurLine.second);
 	//printf("canMoveX, canMoveY : %d, %d\n", CanMoveX, CanMoveY);
 	//printf("IsDrawing : %d, NowDrawing : %d, SuccessedDrawing %d\n", IsDrawing, NowDrawing, SuccessedDrawing);
+
 	if (IsCollidedWithDrawedLine())
 	{
 		printf("Collided\n");
@@ -145,41 +154,72 @@ void Player::CheckCanMove()
 	else
 	{
 		CanMoveX = CanMoveY = false;
-
+		CheckCurLine();
+		//printf("OnLineCnt : %d\n", OnLineCnt);
 		//points 폴리곤 위에서 움직이기
+		if (OnLineCnt == 2)// 꼭짓점에 있을 때
+		{
+			CanMoveX = CanMoveY = true;
+			return;
+		}
+		if (OnLineCnt == 1)
+		{
+			CanMoveX = CanMoveY = true;
+			//x선분일 때
+			if (Points[CurLine.first].y == Points[CurLine.second].y)
+			{
+				LONG max = max(Points[CurLine.first].x, Points[CurLine.second].x);
+				LONG min = min(Points[CurLine.first].x, Points[CurLine.second].x);
 
-		for (int i = 0; i < Points.size(); i++)
+				if (center.getX() >= max)
+					center.setX(max);
+				if (center.getX() <= min)
+					center.setX(min);
+				CanMoveY = false;
+			}
+			if (Points[CurLine.first].x == Points[CurLine.second].x)
+			{
+				LONG max = max(Points[CurLine.first].y, Points[CurLine.second].y);
+				LONG min = min(Points[CurLine.first].y, Points[CurLine.second].y);
+
+				if (center.getY() >= max)
+					center.setY(max);
+				if (center.getY() <= min)
+					center.setY(min);
+				CanMoveX = false;
+			}
+		}
+		/*for (int i = 0; i < Points.size(); i++)
 		{
 			if (Points[i].y == Points[(i + 1) % Points.size()].y && (int)center.getY() == Points[i].y)
 			{
 				LONG max = max(Points[i].x, Points[(i + 1) % Points.size()].x);
 				LONG min = min(Points[i].x, Points[(i + 1) % Points.size()].x);
 
-				//if (center.getX() < min || center.getX() > max)continue;
+
 				if (center.getX() >= max)
 					center.setX(max);
 				if (center.getX() <= min)
 					center.setX(min);
 
+
 				CurLine = { i,(i + 1) % Points.size() };
 				CanMoveX = true;
-				//return;
 			}
 			if (Points[i].x == Points[(i + 1) % Points.size()].x && (int)center.getX() == Points[i].x)
 			{
 				LONG max = max(Points[i].y, Points[(i + 1) % Points.size()].y);
 				LONG min = min(Points[i].y, Points[(i + 1) % Points.size()].y);
 
-				//if (center.getY() < min || center.getY() > max)continue;
 				if (center.getY() >= max)
 					center.setY(max);
 				if (center.getY() <= min)
 					center.setY(min);
+
 				CurLine = { i,(i + 1) % Points.size() };
 				CanMoveY = true;
-				//return;
 			}
-		}
+		}*/
 	}
 }
 
@@ -208,6 +248,8 @@ void Player::Turn()
 void Player::DrawPoints(HDC hdc)
 {
 	Polygon(hdc, PointsArr, Points.size());
+	
+
 }
 
 int Player::CastLine()
@@ -239,7 +281,7 @@ int Player::CastLine()
 		break;
 	}
 	CastedLinePoint = { x,y };
-	POINT tempCenter = { center.getX(), center.getY()};
+	POINT tempCenter = { center.getX(), center.getY() };
 
 	for (int i = 0; i < Points.size(); i++)
 	{
@@ -250,7 +292,7 @@ int Player::CastLine()
 			int maxX = max((int)Points[i].x, Points[(i + 1) % Points.size()].x);
 			int minY = min((int)center.getY(), CastedLinePoint.y);
 			int maxY = max((int)center.getY(), CastedLinePoint.y);
-			if (Points[i].y < maxY && Points[i].y>minY && tempCenter.x>minX && tempCenter.x<maxX)
+			if (Points[i].y < maxY && Points[i].y>minY && tempCenter.x > minX && tempCenter.x < maxX)
 				cnt++;
 			//return;
 		}
@@ -411,7 +453,7 @@ int Player::GetArea(const std::vector<POINT>& _polygon)
 
 void Player::UpdatePoints()
 {
-	if (tempPoints.size() < 3) return;
+	if (tempPoints.size() < 3 || !SuccessedDrawing) return;
 	//CurLine을 기반으로 어떤 점을 기준으로 나눠야 할지 결정
 	std::pair<int, int> prevLine = CurLine;
 	std::pair<int, int> nextLine = CurLine;
@@ -427,7 +469,7 @@ void Player::UpdatePoints()
 			LONG max = max(Points[i].x, Points[(i + 1) % Points.size()].x);
 			LONG min = min(Points[i].x, Points[(i + 1) % Points.size()].x);
 
-			if(center.getX()<=max && center.getX()>=min)
+			if (center.getX() <= max && center.getX() >= min)
 				nextLine = { i,(i + 1) % Points.size() };
 
 		}
@@ -439,21 +481,26 @@ void Player::UpdatePoints()
 			if (center.getY() <= max && center.getY() >= min)
 				nextLine = { i,(i + 1) % Points.size() };
 		}
-	} 
+	}
 	printf("prevLine : %d, %d , nextLine : %d, %d\n", prevLine.first, prevLine.second, nextLine.first, nextLine.second);
 	if (prevLine == nextLine)
 	{
+		//반시계일때 그대로 넣고 시계일땐 거꾸로 넣어야 됨
 		tempPolygon1 = tempPoints;
 		printf("tempPoly 1 : \n");
 		for (auto e : tempPolygon1)
 			printf("\t %d, %d\n", e.x, e.y);
 
-		Points.insert(Points.begin()+prevLine.first+1, tempPoints.begin(), tempPoints.end());
+		if (CheckClockWise())
+			Points.insert(Points.begin() + prevLine.first + 1, tempPoints.begin(), tempPoints.end());
+		else
+			Points.insert(Points.begin() + prevLine.first + 1, tempPoints.rbegin(), tempPoints.rend());
 		tempPolygon2 = Points;
 		printf("tempPoly 2 : \n");
 		for (auto e : tempPolygon2)
 			printf("\t %d, %d\n", e.x, e.y);
 		SetPoints(tempPolygon1, tempPolygon2);
+		//DeleteSamePoints();
 		return;
 	}
 	//tempPolygon 1 생성
@@ -483,6 +530,7 @@ void Player::UpdatePoints()
 	for (auto e : tempPolygon2)
 		printf("\t %d, %d\n", e.x, e.y);
 	SetPoints(tempPolygon1, tempPolygon2);
+	//DeleteSamePoints();
 }
 
 void Player::EndDrawing()
@@ -512,10 +560,120 @@ void Player::SetPoints(std::vector<POINT>& p1, std::vector<POINT>& p2)
 	else
 		Points = p2;
 
+	//DeleteUnnecessaryPoints();
+
 	delete[] PointsArr;
 	PointsArr = new POINT[Points.size()];
 	for (int i = 0; i < Points.size(); i++)
 	{
 		PointsArr[i] = Points[i];
 	}
+	PointSize = GetArea(Points);
+}
+
+BOOL Player::CheckClockWise()
+{
+	//y선분일 경우
+	if (Points[CurLine.first].x == Points[CurLine.second].x)
+	{
+		if ((Points[CurLine.second].y - Points[CurLine.first].y) * (tempPoints.back().y - tempPoints.front().y) > 0)
+			return true;
+		else
+			return false;
+	}
+	//x선분일 경우
+	if (Points[CurLine.first].y == Points[CurLine.second].y)
+	{
+		if ((Points[CurLine.second].x - Points[CurLine.first].x) * (tempPoints.back().x - tempPoints.front().x) > 0)
+			return true;
+		else
+			return false;
+
+	}
+	return 0;
+}
+
+void Player::CheckCurLine()
+{
+	OnLineCnt = 0;
+	for (int i = 0; i < Points.size(); i++)
+	{
+		if (Points[i].y == Points[(i + 1) % Points.size()].y && (int)center.getY() == Points[i].y)
+		{
+			LONG max = max(Points[i].x, Points[(i + 1) % Points.size()].x);
+			LONG min = min(Points[i].x, Points[(i + 1) % Points.size()].x);
+
+			if ((int)center.getX() <= max + 1 && (int)center.getX() >= min - 1)
+			{
+				OnLineCnt++;
+				CurLine = { i,(i + 1) % Points.size() };
+			}
+			//CanMoveX = true;
+		}
+		if (Points[i].x == Points[(i + 1) % Points.size()].x && (int)center.getX() == Points[i].x)
+		{
+			LONG max = max(Points[i].y, Points[(i + 1) % Points.size()].y);
+			LONG min = min(Points[i].y, Points[(i + 1) % Points.size()].y);
+
+			if ((int)center.getY() <= max + 1 && (int)center.getY() >= min - 1)
+			{
+				OnLineCnt++;
+				CurLine = { i,(i + 1) % Points.size() };
+			}
+			//CanMoveY = true;
+		}
+	}
+}
+
+void Player::DeleteUnnecessaryPoints()
+{
+	int idx = 0;
+	for (int i = 1; i < Points.size(); i++)
+	{
+		if (Points[i - 1].y == Points[(i + 1) % Points.size()].y)
+		{
+			LONG max = max(Points[i - 1].x, Points[(i + 1) % Points.size()].x);
+			LONG min = min(Points[i - 1].x, Points[(i + 1) % Points.size()].x);
+			if (Points[i].x<max && Points[i].x>min)
+			{
+				idx = i;
+				break;
+			}
+
+		}
+		if (Points[i - 1].x == Points[(i + 1) % Points.size()].x)
+		{
+			LONG max = max(Points[i - 1].y, Points[(i + 1) % Points.size()].y);
+			LONG min = min(Points[i - 1].y, Points[(i + 1) % Points.size()].y);
+			if (Points[i].y<=max && Points[i].y>=min)
+			{
+				idx = i;
+				break;
+			}
+
+		}
+		 
+	}
+	if (idx)
+	{
+		printf("Points[%d] erased\n", idx);
+		Points.erase(Points.begin() + idx);
+	}
+}
+
+void Player::DisplayPercentage(HDC hdc)
+{
+	//printf("ImageSize : %d, PointSize : %d\n", ImageSize, PointSize);
+	float percentage = 100.0f * (float)(ImageSize - PointSize) / (float)ImageSize;
+	std::wstring str = std::to_wstring(percentage);
+	str += '%';
+	TextOut(hdc, PercentageDisplayPos.x, PercentageDisplayPos.y, str.c_str(), str.size());
+}
+
+void Player::GetBackToFirstPoint()
+{
+}
+
+void Player::GetBackThroughLine(const POINT& start, const POINT& end)
+{
 }

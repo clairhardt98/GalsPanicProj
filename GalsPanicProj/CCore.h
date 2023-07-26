@@ -21,7 +21,5 @@ private:
 
 public:
 	HWND GetMainHwnd() { return hWnd; }
-
-
 };
 

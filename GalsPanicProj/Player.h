@@ -9,6 +9,7 @@ private:
 	LONG radius;
 	Vector2D movement;
 
+	POINT ImageRect[4];
 	//그릴 때 사용하는 임시 벡터
 	std::vector<POINT> tempPoints;
 	//로직 수행 벡터
@@ -17,6 +18,7 @@ private:
 	POINT* PointsArr;
 	//현재 어느 선분 위에 있는지에 대한 정보
 	std::pair<int, int> CurLine;
+	int OnLineCnt;
 	//라인 캐스팅
 	POINT CastedLinePoint;
 	const LONG LineLength = 1000;
@@ -30,8 +32,13 @@ private:
 	const float Speed = 200.0f;
 	float dt;
 
+	LONG ImageSize;
+	LONG PointSize;
+	POINT PercentageDisplayPos;
+
 public:
 	Player();
+	~Player();
 	void SetRect(const RECT& rv);
 	Vector2D GetCenter() { return center; }
 	void SetCenter(const Vector2D& c) { center = c; }
@@ -66,4 +73,12 @@ public:
 	int GetArea(const std::vector<POINT>& _polygon);
 	void UpdatePoints();
 	void SetPoints(std::vector<POINT>& p1, std::vector<POINT>& p2);
+	BOOL CheckClockWise();
+
+public:
+	void CheckCurLine();
+	void DeleteUnnecessaryPoints();
+	void DisplayPercentage(HDC hdc);
+	void GetBackToFirstPoint();
+	void GetBackThroughLine(const POINT& start, const POINT& end);
 };
