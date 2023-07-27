@@ -1,5 +1,5 @@
 #pragma once
-#include <list>
+#include "CCore.h"
 class Player
 {
 private:
@@ -23,12 +23,14 @@ private:
 	POINT CastedLinePoint;
 	const LONG LineLength = 1000;
 
+	//되돌아가기
+	std::pair<POINT, POINT> CurTempLine;
 	BOOL IsDrawing;
 	BOOL CanMoveX;
 	BOOL CanMoveY;
 	BOOL NowDrawing;
 	BOOL SuccessedDrawing;
-
+	BOOL IsReturning;
 	const float Speed = 200.0f;
 	float dt;
 
@@ -40,12 +42,13 @@ public:
 	Player();
 	~Player();
 	void SetRect(const RECT& rv);
+	void SetDT(float _dt);
 	Vector2D GetCenter() { return center; }
 	void SetCenter(const Vector2D& c) { center = c; }
 	LONG GetRadius() { return radius;}
 	void SetRadius(const LONG& l) { radius = l; }
 	const Vector2D& GetMovement() { return movement; }
-	void SetMovement(int movement, float dt);
+	void SetMovement(int movement);
 	void CheckCanMove();
 	void DrawPoints(HDC hdc);
 	
@@ -80,5 +83,4 @@ public:
 	void DeleteUnnecessaryPoints();
 	void DisplayPercentage(HDC hdc);
 	void GetBackToFirstPoint();
-	void GetBackThroughLine(const POINT& start, const POINT& end);
 };

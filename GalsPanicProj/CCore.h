@@ -1,5 +1,6 @@
 #pragma once
 #include "Player.h"
+#include "Enemy.h"
 class CCore
 {
 	SINGLE(CCore);
@@ -21,5 +22,8 @@ private:
 
 public:
 	HWND GetMainHwnd() { return hWnd; }
+
+public:
+	void SetEnemyPoints(const std::vector<POINT>& points);
 };
 

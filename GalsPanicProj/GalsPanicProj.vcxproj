@@ -132,6 +132,7 @@
     <ClInclude Include="CCore.h" />
     <ClInclude Include="CTimeMgr.h" />
     <ClInclude Include="define.h" />
+    <ClInclude Include="Enemy.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="GalsPanicProj.h" />
     <ClInclude Include="pch.h" />
@@ -143,6 +144,7 @@
   <ItemGroup>
     <ClCompile Include="CCore.cpp" />
     <ClCompile Include="CTimeMgr.cpp" />
+    <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="GalsPanicProj.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Vector2D.cpp" />

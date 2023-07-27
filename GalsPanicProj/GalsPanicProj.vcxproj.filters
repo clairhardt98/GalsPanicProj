@@ -58,6 +58,9 @@
     <ClInclude Include="Vector2D.h">
       <Filter>Default</Filter>
     </ClInclude>
+    <ClInclude Include="Enemy.h">
+      <Filter>Engine\04. Object</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GalsPanicProj.cpp">
@@ -74,6 +77,9 @@
     </ClCompile>
     <ClCompile Include="Vector2D.cpp">
       <Filter>Default</Filter>
+    </ClCompile>
+    <ClCompile Include="Enemy.cpp">
+      <Filter>Engine\04. Object</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

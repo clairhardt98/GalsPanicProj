@@ -13,6 +13,7 @@ Player::Player()
 	SuccessedDrawing = false;
 	NowDrawing = false;
 	CanMoveX = CanMoveY = false;
+	IsReturning = false;
 	//>>
 
 	//<<이동 상태 및 이동 속도
@@ -33,11 +34,12 @@ void Player::SetRect(const RECT& rv)
 	Points.push_back({ rv.left + 50,rv.bottom - 50 });
 	Points.push_back({ rv.right - 50,rv.bottom - 50 });
 	Points.push_back({ rv.right - 50, rv.top + 100 });
-	for (int i = 0; i < Points.size(); i++)
-		ImageRect[i] = Points[i];
-	//>>
+	CCore::GetInst()->SetEnemyPoints(Points);
+	/*for (int i = 0; i < Points.size(); i++)
+		ImageRect[i] = Points[i];*/
+		//>>
 
-	//기본 위치 초기화
+		//기본 위치 초기화
 	center = Vector2D(Points[0].x, Points[0].y);
 	PointsArr = new POINT[Points.size()];
 	for (int i = 0; i < Points.size(); i++)
@@ -49,7 +51,12 @@ void Player::SetRect(const RECT& rv)
 	PointSize = ImageSize = GetArea(Points);
 }
 
-void Player::SetMovement(int m, float _dt)
+void Player::SetDT(float _dt)
+{
+	dt = _dt;
+}
+
+void Player::SetMovement(int m)
 {
 	//<<스페이스바 누르고 있을 때 반대 방향으로 이동 못하게
 	if (IsDrawing && mov == UP && m == DOWN)
@@ -63,7 +70,7 @@ void Player::SetMovement(int m, float _dt)
 	//<<
 
 	//deltaTime 정의
-	dt = _dt;
+	//dt = _dt;
 
 	//>>이동 방향을 꺾었을 때
 	if (mov != STOP && m != STOP && m != mov)
@@ -120,6 +127,12 @@ void Player::Draw(HDC hdc)
 
 void Player::Update()
 {
+	if (IsReturning)
+	{
+		GetBackToFirstPoint();
+		//sleep
+		return;
+	}
 	CheckCanMove();
 	if (CanMoveX)
 		center.setX(center.getX() + movement.getX() * Speed * dt);
@@ -225,6 +238,7 @@ void Player::CheckCanMove()
 
 void Player::StartDrawing()
 {
+	if (IsReturning) return;
 	//<<그리기 시작, IsDrawing을 True 로
 	if (!IsDrawing)
 	{
@@ -248,8 +262,6 @@ void Player::Turn()
 void Player::DrawPoints(HDC hdc)
 {
 	Polygon(hdc, PointsArr, Points.size());
-	
-
 }
 
 int Player::CastLine()
@@ -313,7 +325,7 @@ int Player::CastLine()
 
 void Player::DrawLine(HDC hdc)
 {
-	if (IsDrawing && tempPoints.size() > 0)
+	if ((IsDrawing || IsReturning) && tempPoints.size() > 0)
 	{
 		for (int i = 0; i < tempPoints.size() - 1; i++)
 		{
@@ -321,7 +333,7 @@ void Player::DrawLine(HDC hdc)
 			LineTo(hdc, tempPoints[i + 1].x, tempPoints[i + 1].y);
 		}
 	}
-	if (IsDrawing)
+	if ((IsDrawing || IsReturning) && tempPoints.size() > 0)
 	{
 		MoveToEx(hdc, tempPoints.back().x, tempPoints.back().y, nullptr);
 		LineTo(hdc, center.getX(), center.getY());
@@ -401,10 +413,7 @@ BOOL Player::IsCollidedWithBorderLine()
 	if (SuccessedDrawing)
 	{
 
-		//printf("TempPoints : \n");
-		//for (auto e : tempPoints)
-		//	printf("\t (%d, %d)\n", e.x, e.y);
-		////NowDrawing = false;
+
 		return true;
 	}
 	return false;
@@ -415,26 +424,7 @@ BOOL Player::IsCollidedWithMyPolygon()
 	return 0;
 }
 
-//int Player::CCW(POINT p1, POINT p2, POINT p3)
-//{
-//	int s = p1.x * p2.y + p2.x * p3.y + p3.x * p1.y;
-//	s -= (p1.y * p2.x + p2.y * p3.x + p3.y * p1.x);
-//
-//	if (s > 0)return 1;
-//	if (s == 0)return 0;
-//	if (s < 0)return -1;
-//}
-//
-//BOOL Player::IsIntersect(POINT p1, POINT p2, POINT p3, POINT p4)
-//{
-//	int p1p2 = CCW(p1, p2, p3) * CCW(p1, p2, p4);
-//	int p3p4 = CCW(p3, p4, p1) * CCW(p3, p4, p2);
-//
-//	if (p1p2 == 0 && p3p4 == 0)
-//		return false;
-//
-//	return p1p2 <= 0 && p3p4 <= 0;
-//}
+
 
 int Player::GetArea(const std::vector<POINT>& _polygon)
 {
@@ -535,13 +525,22 @@ void Player::UpdatePoints()
 
 void Player::EndDrawing()
 {
+
 	if (IsDrawing)
 	{
 		if (!SuccessedDrawing)
 		{
+			CurTempLine = { POINT{(LONG)center.getX(), (LONG)center.getY()}, tempPoints.back() };
+			IsDrawing = false;
+			NowDrawing = false;
+			IsReturning = true;
+			return;
 			//되돌아가는 로직
-			center = Vector2D(tempPoints[0].x, tempPoints[0].y);
+			//center = Vector2D(tempPoints[0].x, tempPoints[0].y);
+			//tempPoints.clear();
+			//GetBackToFirstPoint();
 		}
+
 		//CheckCanMove();
 		UpdatePoints();
 		tempPoints.clear();
@@ -549,6 +548,8 @@ void Player::EndDrawing()
 		IsDrawing = false;
 		NowDrawing = false;
 		SuccessedDrawing = false;
+		//CurTempLine = {}
+		//IsReturning = true;
 	}
 }
 
@@ -569,6 +570,7 @@ void Player::SetPoints(std::vector<POINT>& p1, std::vector<POINT>& p2)
 		PointsArr[i] = Points[i];
 	}
 	PointSize = GetArea(Points);
+	CCore::GetInst()->SetEnemyPoints(Points);
 }
 
 BOOL Player::CheckClockWise()
@@ -645,14 +647,14 @@ void Player::DeleteUnnecessaryPoints()
 		{
 			LONG max = max(Points[i - 1].y, Points[(i + 1) % Points.size()].y);
 			LONG min = min(Points[i - 1].y, Points[(i + 1) % Points.size()].y);
-			if (Points[i].y<=max && Points[i].y>=min)
+			if (Points[i].y <= max && Points[i].y >= min)
 			{
 				idx = i;
 				break;
 			}
 
 		}
-		 
+
 	}
 	if (idx)
 	{
@@ -672,8 +674,77 @@ void Player::DisplayPercentage(HDC hdc)
 
 void Player::GetBackToFirstPoint()
 {
+	POINT start = CurTempLine.first;
+	POINT end = CurTempLine.second;
+
+	if (start.x == end.x)
+	{
+		LONG max = max(start.y, end.y);
+		LONG min = min(start.y, end.y);
+		//y방향 선분이고 아래로 이동해야 할 경우
+		if (start.y == min)
+		{
+			if (center.getY() < end.y)
+			{
+				center.setY(center.getY() + Speed * dt);
+				return;
+			}
+		}
+		//위로 올라가야 할 경우
+		if (start.y == max)
+		{
+			if (center.getY() > end.y + 1)
+			{
+				center.setY(center.getY() - Speed * dt);
+				return;
+			}
+		}
+	}
+	if (start.y == end.y)
+	{
+		LONG max = max(start.x, end.x);
+		LONG min = min(start.x, end.x);
+		//x방향 선분이고 오른쪽으로 이동해야 할 경우
+		if (start.x == min)
+		{
+			if (center.getX() < end.x)
+			{
+				center.setX(center.getX() + Speed * dt);
+				return;
+			}
+		}
+		//왼쪽으로 이동해야 할 경우
+		if (start.x == max)
+		{
+			if (center.getX() > end.x + 1)
+			{
+				center.setX(center.getX() - Speed * dt);
+				return;
+			}
+		}
+	}
+	if (tempPoints.size() == 1)
+	{
+		IsReturning = false;
+		tempPoints.clear();
+		return;
+	}
+
+	else
+	{
+		//auto it = tempPoints.
+		CurTempLine.first = CurTempLine.second;
+		tempPoints.pop_back();
+		printf("tempPoints : \n");
+		for (auto e : tempPoints)
+			printf("\t %d, %d\n", e.x, e.y);
+		//if (!tempPoints.empty())
+		CurTempLine.second = tempPoints.back();
+		return;
+	}
+	//거꾸로 탐색하면서 Center를 움직인다
+	/*for (auto it = tempPoints.rbegin(); it != tempPoints.rend() - 1; it++)
+		GetBackThroughLine(*it, *(it + 1));*/
 }
 
-void Player::GetBackThroughLine(const POINT& start, const POINT& end)
-{
-}
+

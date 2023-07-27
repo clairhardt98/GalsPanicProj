@@ -5,6 +5,7 @@
 
 //objects
 Player player;
+Enemy enemy;
 HBITMAP hBitmap;
 BITMAP BitBack;
 CCore::CCore()
@@ -48,9 +49,13 @@ int CCore::Init(HWND hWnd, POINT res)
 
 	if (hBitmap==NULL)
 		MessageBox(NULL, TEXT("이미지 로드 에러"), TEXT("에러"), MB_OK);
+
 	GetObject(hBitmap, sizeof(BITMAP), &BitBack);
 	//Init Player
 	player.SetRect(rt);
+
+	//init Enemy
+	enemy.SetPosition(rt);
 	return S_OK;
 }
 
@@ -63,40 +68,43 @@ void CCore::Progress()
 
 void CCore::Update()
 {
-	static bool spacePressed = false;
-	if (GetAsyncKeyState(VK_UP) & 0x8000)
+	player.SetDT(fDT);
+	enemy.SetDT(fDT);
+
+
+	if (GetKeyState(VK_UP) & 0x8000)
 	{
-		player.SetMovement(0,fDT);
+		player.SetMovement(0);
 	}
-	else if (GetAsyncKeyState(VK_DOWN) & 0x8000)
+	else if (GetKeyState(VK_DOWN) & 0x8000)
 	{
-		player.SetMovement(1,fDT);
+		player.SetMovement(1);
 	}
-	else if (GetAsyncKeyState(VK_LEFT) & 0x8000)
+	else if (GetKeyState(VK_LEFT) & 0x8000)
 	{
-		player.SetMovement(2, fDT);
+		player.SetMovement(2);
 	}
-	else if (GetAsyncKeyState(VK_RIGHT) & 0x8000)
+	else if (GetKeyState(VK_RIGHT) & 0x8000)
 	{
-		player.SetMovement(3, fDT);
+		player.SetMovement(3);
 	}
-	else if ((GetAsyncKeyState(VK_SPACE) & 0x8000))
+	else if ((GetKeyState(VK_SPACE) & 0x8000))
 	{
 		player.StartDrawing();
-		spacePressed = true;
 	}
-	else if (GetAsyncKeyState(VK_SPACE) & 0x0000)
+	else if (GetKeyState(VK_SPACE) & 0x0000)
 	{
 		player.EndDrawing();
-		spacePressed = false;
 	}
 	else
 	{
-		player.SetMovement(4, fDT);
+		player.SetMovement(4);
 		player.EndDrawing();
 	}
-	
+
 	player.Update();
+	enemy.SetMovement();
+	enemy.Update();
 }
 
 void CCore::Render()
@@ -112,6 +120,12 @@ void CCore::Render()
 		DeleteDC(hMemDC);
 	}
 	player.Draw(memDC);
+	enemy.Draw(memDC);
 	BitBlt(hdc, 0, 0, ptResolution.x, ptResolution.y, memDC, 0, 0, SRCCOPY);
 	
+}
+
+void CCore::SetEnemyPoints(const std::vector<POINT>& points)
+{
+	enemy.GetPlayerPoints(points);
 }
