@@ -10,8 +10,7 @@ Enemy::Enemy()
 void Enemy::Draw(HDC hdc)
 {
 	Ellipse(hdc, center.getX() - radius, center.getY() - radius, center.getX() + radius, center.getY() + radius);
-	MoveToEx(hdc, LineCastStartPos.x, LineCastStartPos.y, nullptr);
-	LineTo(hdc, LineCastEndPos.x, LineCastEndPos.y);
+	
 }
 
 void Enemy::Update()

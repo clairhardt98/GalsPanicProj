@@ -20,10 +20,15 @@ Player::Player()
 	mov = STOP;
 	dt = 0;
 	OnLineCnt = 1;
+
 }
 Player::~Player()
 {
 	delete[] PointsArr;
+	if (nullptr != pTex)
+		delete pTex;
+	if (nullptr != pBackTex)
+		delete pBackTex;
 }
 void Player::SetRect(const RECT& rv)
 {
@@ -113,15 +118,21 @@ void Player::SetMovement(int m)
 
 void Player::Draw(HDC hdc)
 {
-
+	
 	DrawPoints(hdc);
 
 	//printf("Cur Line : %d, %d\n", CurLine.first, CurLine.second);
 	DrawLine(hdc);
-	Ellipse(hdc, center.getX() - radius, center.getY() - radius,
-		center.getX() + radius, center.getY() + radius);
-	/*for (int i = 0; i < tempPoints.size(); i++)
-		Ellipse(hdc, tempPoints[i].x - 5, tempPoints[i].y - 5, tempPoints[i].x + 5, tempPoints[i].y + 5);*/
+
+	int Width = (int)pTex->Width();
+	int Height = (int)pTex->Height();
+	/*BitBlt(hdc, int(center.getX()-Width/2), int(center.getY()-Height/2),Width,Height,
+		pTex->GetDC(),0,0,SRCCOPY);*/
+	TransparentBlt(hdc, int(center.getX() - Width / 2), int(center.getY() - Height / 2),
+		Width, Height,
+		pTex->GetDC(),
+		0,0,Width,Height,
+		RGB(0,255,255));
 	DisplayPercentage(hdc);
 }
 
@@ -262,6 +273,16 @@ void Player::Turn()
 void Player::DrawPoints(HDC hdc)
 {
 	Polygon(hdc, PointsArr, Points.size());
+}
+
+void Player::SetTexture()
+{
+	pTex = new CTexture;
+
+	wstring strFilePath = CPathMgr::GetInst()->GetContentPath();
+	strFilePath += L"Images\\kirby.bmp";
+	pTex->Load(strFilePath);
+
 }
 
 int Player::CastLine()
@@ -443,7 +464,7 @@ int Player::GetArea(const std::vector<POINT>& _polygon)
 
 void Player::UpdatePoints()
 {
-	if (tempPoints.size() < 3 || !SuccessedDrawing) return;
+	if (tempPoints.size() < 2 || !SuccessedDrawing) return;
 	//CurLine을 기반으로 어떤 점을 기준으로 나눠야 할지 결정
 	std::pair<int, int> prevLine = CurLine;
 	std::pair<int, int> nextLine = CurLine;
@@ -568,6 +589,7 @@ void Player::SetPoints(std::vector<POINT>& p1, std::vector<POINT>& p2)
 	for (int i = 0; i < Points.size(); i++)
 	{
 		PointsArr[i] = Points[i];
+		
 	}
 	PointSize = GetArea(Points);
 	CCore::GetInst()->SetEnemyPoints(Points);

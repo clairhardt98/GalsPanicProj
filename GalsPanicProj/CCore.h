@@ -22,6 +22,7 @@ private:
 
 public:
 	HWND GetMainHwnd() { return hWnd; }
+	HDC GetMainDC() { return hdc; }
 
 public:
 	void SetEnemyPoints(const std::vector<POINT>& points);

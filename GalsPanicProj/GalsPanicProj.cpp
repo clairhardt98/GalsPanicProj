@@ -12,7 +12,6 @@
 #endif
 
 #define MAX_LOADSTRING 100
-#define timer_id 1
 
 // 전역 변수:
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
@@ -158,9 +157,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
     case WM_CREATE:
-        SetTimer(hWnd, timer_id, 10, NULL);
-     
-        
         break;
     case WM_TIMER:
         

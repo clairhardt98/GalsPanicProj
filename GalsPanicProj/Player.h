@@ -1,5 +1,9 @@
 #pragma once
 #include "CCore.h"
+#include "CPathMgr.h"
+#include "CTexture.h"
+
+
 class Player
 {
 private:
@@ -38,6 +42,10 @@ private:
 	LONG PointSize;
 	POINT PercentageDisplayPos;
 
+	CTexture* pTex;
+	CTexture* pBackTex;
+	//다각형 내부 그리기
+
 public:
 	Player();
 	~Player();
@@ -51,6 +59,7 @@ public:
 	void SetMovement(int movement);
 	void CheckCanMove();
 	void DrawPoints(HDC hdc);
+	void SetTexture();
 	
 	int CastLine();
 
@@ -84,3 +93,8 @@ public:
 	void DisplayPercentage(HDC hdc);
 	void GetBackToFirstPoint();
 };
+
+
+
+
+

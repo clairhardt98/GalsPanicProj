@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "CCore.h"
 #include "CTimeMgr.h"
+#include "CPathMgr.h"
+#include "CTexture.h"
 #include <PathCch.h>
 
 //objects
@@ -8,6 +10,8 @@ Player player;
 Enemy enemy;
 HBITMAP hBitmap;
 BITMAP BitBack;
+
+
 CCore::CCore()
 	:hWnd(0)
 	, ptResolution{}
@@ -43,8 +47,12 @@ int CCore::Init(HWND hWnd, POINT res)
 	DeleteObject(hOldBit);
 	//Init Mgr
 	CTimeMgr::GetInst()->Init();
+	CPathMgr::GetInst()->init();
 
-	hBitmap = (HBITMAP)LoadImage(NULL, TEXT("수지.bmp"), 
+	wstring strFilePath = CPathMgr::GetInst()->GetContentPath();
+	strFilePath += L"Images\\수지.bmp";
+
+	hBitmap = (HBITMAP)LoadImage(NULL, strFilePath.c_str(), 
 		IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
 	if (hBitmap==NULL)
@@ -53,6 +61,7 @@ int CCore::Init(HWND hWnd, POINT res)
 	GetObject(hBitmap, sizeof(BITMAP), &BitBack);
 	//Init Player
 	player.SetRect(rt);
+	player.SetTexture();
 
 	//init Enemy
 	enemy.SetPosition(rt);
@@ -62,6 +71,7 @@ int CCore::Init(HWND hWnd, POINT res)
 void CCore::Progress()
 {
 	CTimeMgr::GetInst()->Update();
+	CTimeMgr::GetInst()->Render();
 	Update();
 	Render();
 }

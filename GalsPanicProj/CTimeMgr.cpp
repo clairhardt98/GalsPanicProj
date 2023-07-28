@@ -27,6 +27,11 @@ void CTimeMgr::Update()
 	deltaTime = (double)(curCount.QuadPart - prevCount.QuadPart) / (double)frequency.QuadPart;
 
 	prevCount = curCount;
+	
+}
+
+void CTimeMgr::Render()
+{
 	++callCount;
 	Acc += deltaTime;
 	if (Acc >= 1.)
