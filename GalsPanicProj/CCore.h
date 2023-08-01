@@ -12,6 +12,10 @@ private:
 	HBITMAP hBit;
 	HDC		memDC;
 
+private:
+	bool GameCleared;
+	bool GameStarted;
+
 
 public:
 	int Init(HWND hWnd, POINT res);
@@ -26,5 +30,7 @@ public:
 
 public:
 	void SetEnemyPoints(const std::vector<POINT>& points);
+	void GameClear();
+	void StartScene();
 };
 

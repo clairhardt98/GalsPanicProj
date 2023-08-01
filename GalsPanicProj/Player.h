@@ -12,7 +12,8 @@ private:
 	Vector2D center;
 	LONG radius;
 	Vector2D movement;
-
+	int health;
+	
 	POINT ImageRect[4];
 	//그릴 때 사용하는 임시 벡터
 	std::vector<POINT> tempPoints;
@@ -41,10 +42,17 @@ private:
 	LONG ImageSize;
 	LONG PointSize;
 	POINT PercentageDisplayPos;
+	POINT HealthDisplayPos;
 
 	CTexture* pTex;
 	CTexture* pBackTex;
 	//다각형 내부 그리기
+	HBRUSH hBrush;
+	HPEN PolygonPen;
+	HPEN PlayerPen;
+	float percentage;
+
+	BOOL Cleared;
 
 public:
 	Player();
@@ -86,12 +94,19 @@ public:
 	void UpdatePoints();
 	void SetPoints(std::vector<POINT>& p1, std::vector<POINT>& p2);
 	BOOL CheckClockWise();
+	BOOL GetIsDrawing() { return IsDrawing; }
+
 
 public:
 	void CheckCurLine();
 	void DeleteUnnecessaryPoints();
 	void DisplayPercentage(HDC hdc);
+	void DisplayHealth(HDC hdc);
 	void GetBackToFirstPoint();
+public:
+	void Damage() { health--; }
+	int GetHealth() { return health; }
+	void SetClear(bool b) { Cleared = b; }
 };
 
 

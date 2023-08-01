@@ -1,4 +1,6 @@
 #pragma once
+#include "CTexture.h"
+#include "CCore.h"
 class Enemy
 {
 private:
@@ -9,7 +11,7 @@ private:
 	std::vector<POINT> playerPoints;
 	
 	const LONG radius = 50;
-	const float moveSpeed = 200.0f;
+	const float moveSpeed = 400.0f;
 	float dt;
 
 	POINT LineCastStartPos;
@@ -18,9 +20,12 @@ private:
 
 	double accum;
 
+	CTexture* pTex;
+	bool Cleared;
+
 public:
 	Enemy();
-	//~Enemy();
+	~Enemy();
 public:
 	void Draw(HDC hdc);
 	void Update();
@@ -29,8 +34,14 @@ public:
 	void SetMovement();
 	void SetRandomMov();
 	void SetDT(float _dt);
+	void SetTexture();
+public:
+	Vector2D GetCenter() { return center; }
+	LONG GetRadius() const{ return radius; }
 public:
 	int CheckMov();
+	bool CheckCollision(Vector2D playerPos, LONG playerRadius);
 public:
 	void GetPlayerPoints(const std::vector<POINT>& points);
+	void SetClear(bool b) { Cleared = b; }
 };

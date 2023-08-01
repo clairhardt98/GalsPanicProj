@@ -24,5 +24,5 @@ void CPathMgr::init()
 	//상위폴더로
 	//+bin\\content\\붙여주기
 
-	//SetWindowText(CCore::GetInst()->GetMainHwnd(), m_szContentPath);
+	SetWindowText(CCore::GetInst()->GetMainHwnd(), m_szContentPath);
 }

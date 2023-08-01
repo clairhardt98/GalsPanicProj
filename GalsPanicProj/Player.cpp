@@ -20,6 +20,13 @@ Player::Player()
 	mov = STOP;
 	dt = 0;
 	OnLineCnt = 1;
+	health = 3;
+
+	hBrush = CreateSolidBrush(RGB(255, 128, 0));
+	PolygonPen = CreatePen(PS_SOLID, 2,RGB(128, 64, 64));
+	PlayerPen = CreatePen(PS_SOLID, 2, RGB(128, 64, 64));
+	percentage = 0.0f;
+	Cleared = false;
 
 }
 Player::~Player()
@@ -29,10 +36,15 @@ Player::~Player()
 		delete pTex;
 	if (nullptr != pBackTex)
 		delete pBackTex;
+
+	DeleteObject(hBrush);
+	DeleteObject(PolygonPen);
+	DeleteObject(PlayerPen);
 }
 void Player::SetRect(const RECT& rv)
 {
 	PercentageDisplayPos = { 10, 10 };
+	HealthDisplayPos = { 200,10 };
 	//<<기본 외곽 사각형 정의
 
 	Points.push_back({ rv.left + 50, rv.top + 100 });
@@ -118,7 +130,7 @@ void Player::SetMovement(int m)
 
 void Player::Draw(HDC hdc)
 {
-	
+	if (Cleared)return;
 	DrawPoints(hdc);
 
 	//printf("Cur Line : %d, %d\n", CurLine.first, CurLine.second);
@@ -134,6 +146,7 @@ void Player::Draw(HDC hdc)
 		0,0,Width,Height,
 		RGB(0,255,255));
 	DisplayPercentage(hdc);
+	DisplayHealth(hdc);
 }
 
 void Player::Update()
@@ -213,37 +226,7 @@ void Player::CheckCanMove()
 				CanMoveX = false;
 			}
 		}
-		/*for (int i = 0; i < Points.size(); i++)
-		{
-			if (Points[i].y == Points[(i + 1) % Points.size()].y && (int)center.getY() == Points[i].y)
-			{
-				LONG max = max(Points[i].x, Points[(i + 1) % Points.size()].x);
-				LONG min = min(Points[i].x, Points[(i + 1) % Points.size()].x);
 
-
-				if (center.getX() >= max)
-					center.setX(max);
-				if (center.getX() <= min)
-					center.setX(min);
-
-
-				CurLine = { i,(i + 1) % Points.size() };
-				CanMoveX = true;
-			}
-			if (Points[i].x == Points[(i + 1) % Points.size()].x && (int)center.getX() == Points[i].x)
-			{
-				LONG max = max(Points[i].y, Points[(i + 1) % Points.size()].y);
-				LONG min = min(Points[i].y, Points[(i + 1) % Points.size()].y);
-
-				if (center.getY() >= max)
-					center.setY(max);
-				if (center.getY() <= min)
-					center.setY(min);
-
-				CurLine = { i,(i + 1) % Points.size() };
-				CanMoveY = true;
-			}
-		}*/
 	}
 }
 
@@ -272,7 +255,19 @@ void Player::Turn()
 
 void Player::DrawPoints(HDC hdc)
 {
+	HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrush);
 	Polygon(hdc, PointsArr, Points.size());
+	SelectObject(hdc, hOldBrush);
+
+
+	HPEN hOldPen = (HPEN)SelectObject(hdc, PolygonPen);
+	//선 그리는 로직
+	for (int i = 0; i < Points.size(); i++)
+	{
+		MoveToEx(hdc, Points[i].x, Points[i].y, nullptr);
+		LineTo(hdc, Points[(i + 1)%Points.size()].x, Points[(i + 1) % Points.size()].y);
+	}
+	SelectObject(hdc, hOldPen);
 }
 
 void Player::SetTexture()
@@ -346,6 +341,7 @@ int Player::CastLine()
 
 void Player::DrawLine(HDC hdc)
 {
+	HPEN hOldPen = (HPEN)SelectObject(hdc, PlayerPen);
 	if ((IsDrawing || IsReturning) && tempPoints.size() > 0)
 	{
 		for (int i = 0; i < tempPoints.size() - 1; i++)
@@ -359,6 +355,7 @@ void Player::DrawLine(HDC hdc)
 		MoveToEx(hdc, tempPoints.back().x, tempPoints.back().y, nullptr);
 		LineTo(hdc, center.getX(), center.getY());
 	}
+	SelectObject(hdc, hOldPen);
 }
 
 BOOL Player::IsCollidedWithDrawedLine()
@@ -409,8 +406,8 @@ BOOL Player::IsCollidedWithBorderLine()
 			LONG min = min(Points[i].x, Points[(i + 1) % Points.size()].x);
 			if (center.getX() >= min && center.getX() <= max)
 			{
-				tempPoints.push_back({ (int)center.getX(), (int)center.getY() });
-				printf("Pushed %d, %d\n", (int)center.getX(), (int)center.getY());
+				tempPoints.push_back({ (int)center.getX(), Points[i].y });
+				printf("Pushed %d, %d\n", (int)center.getX(), Points[i].y);
 				SuccessedDrawing = true;
 				break;
 			}
@@ -422,8 +419,8 @@ BOOL Player::IsCollidedWithBorderLine()
 
 			if (center.getY() >= min && center.getY() <= max)
 			{
-				tempPoints.push_back({ (int)center.getX(), (int)center.getY() });
-				printf("Pushed %d, %d\n", (int)center.getX(), (int)center.getY());
+				tempPoints.push_back({ Points[i].x, (int)center.getY() });
+				printf("Pushed %d, %d\n", Points[i].x, (int)center.getY());
 				SuccessedDrawing = true;
 				break;
 			}
@@ -688,10 +685,21 @@ void Player::DeleteUnnecessaryPoints()
 void Player::DisplayPercentage(HDC hdc)
 {
 	//printf("ImageSize : %d, PointSize : %d\n", ImageSize, PointSize);
-	float percentage = 100.0f * (float)(ImageSize - PointSize) / (float)ImageSize;
+	percentage = 100.0f * (float)(ImageSize - PointSize) / (float)ImageSize;
+	if (percentage > 80)
+	{
+		CCore::GetInst()->GameClear();
+	}
 	std::wstring str = std::to_wstring(percentage);
 	str += '%';
 	TextOut(hdc, PercentageDisplayPos.x, PercentageDisplayPos.y, str.c_str(), str.size());
+}
+
+void Player::DisplayHealth(HDC hdc)
+{
+	std::wstring str = L"남은 체력 : ";
+	str += std::to_wstring(health);
+	TextOut(hdc, HealthDisplayPos.x, HealthDisplayPos.y, str.c_str(), str.size());
 }
 
 void Player::GetBackToFirstPoint()
@@ -708,7 +716,7 @@ void Player::GetBackToFirstPoint()
 		{
 			if (center.getY() < end.y)
 			{
-				center.setY(center.getY() + Speed * dt);
+				center.setY(center.getY() + 2*Speed * dt);
 				return;
 			}
 		}
@@ -717,7 +725,7 @@ void Player::GetBackToFirstPoint()
 		{
 			if (center.getY() > end.y + 1)
 			{
-				center.setY(center.getY() - Speed * dt);
+				center.setY(center.getY() - 2*Speed * dt);
 				return;
 			}
 		}
@@ -731,7 +739,7 @@ void Player::GetBackToFirstPoint()
 		{
 			if (center.getX() < end.x)
 			{
-				center.setX(center.getX() + Speed * dt);
+				center.setX(center.getX() + 2*Speed * dt);
 				return;
 			}
 		}
@@ -740,7 +748,7 @@ void Player::GetBackToFirstPoint()
 		{
 			if (center.getX() > end.x + 1)
 			{
-				center.setX(center.getX() - Speed * dt);
+				center.setX(center.getX() - 2*Speed * dt);
 				return;
 			}
 		}
@@ -764,9 +772,6 @@ void Player::GetBackToFirstPoint()
 		CurTempLine.second = tempPoints.back();
 		return;
 	}
-	//거꾸로 탐색하면서 Center를 움직인다
-	/*for (auto it = tempPoints.rbegin(); it != tempPoints.rend() - 1; it++)
-		GetBackThroughLine(*it, *(it + 1));*/
 }
 
 

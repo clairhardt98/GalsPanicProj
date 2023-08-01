@@ -5,12 +5,24 @@ Enemy::Enemy()
 {
 	SetRandomMov();
 	accum = 0;
+	Cleared = false;
 }
 
+Enemy::~Enemy()
+{
+	if(pTex!=nullptr)
+		delete pTex;
+}
 void Enemy::Draw(HDC hdc)
 {
-	Ellipse(hdc, center.getX() - radius, center.getY() - radius, center.getX() + radius, center.getY() + radius);
-	
+	if (Cleared)return;
+	int Width = (int)pTex->Width();
+	int Height = (int)pTex->Height();
+	TransparentBlt(hdc, int(center.getX() - Width / 2), int(center.getY() - Height / 2),
+		Width, Height,
+		pTex->GetDC(),
+		0, 0, Width, Height,
+		RGB(255, 0, 255));
 }
 
 void Enemy::Update()
@@ -39,7 +51,6 @@ void Enemy::Update()
 		SetRandomMov();
 	center.setX(center.getX() + movement.getX() * moveSpeed * dt);
 	center.setY(center.getY() + movement.getY() * moveSpeed * dt);
-
 }
 
 void Enemy::SetPosition(const RECT& rv)
@@ -102,6 +113,14 @@ void Enemy::SetDT(float _dt)
 	dt = _dt;
 }
 
+void Enemy::SetTexture()
+{
+	pTex = new CTexture;
+	wstring strFilePath = CPathMgr::GetInst()->GetContentPath();
+	strFilePath += L"Images\\Enemy.bmp";
+	pTex->Load(strFilePath);
+}
+
 int Enemy::CheckMov()
 {
 	int cnt = 0;
@@ -131,6 +150,16 @@ int Enemy::CheckMov()
 	}
 	//printf("cnt : %d\n", cnt);
 	return cnt;
+}
+
+bool Enemy::CheckCollision(Vector2D playerPos, LONG playerRadius)
+{
+	//두 점 사이의 거리가 반지름의 합보다 크면 충돌아님
+	LONG distSqr = pow(center.getX() - playerPos.getX(), 2) + pow(center.getY() - playerPos.getY(), 2);
+	LONG radiusSqr = pow(radius + playerRadius, 2);
+	if (radiusSqr > distSqr)return true;
+	else
+		return false;
 }
 
 void Enemy::GetPlayerPoints(const std::vector<POINT>& points)
